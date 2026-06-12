@@ -34,22 +34,30 @@ function clampRotation(rotation: number) {
   return Math.min(Math.max(rotation, -45), 45);
 }
 
-function getSavedStickers(levelId: string) {
+function getSavedStickers(levelId: string, levelStickers: LevelSticker[]) {
+  const validStickerIds = new Set(levelStickers.map((sticker) => sticker.id));
+
   return (
-    loadLevelProgress(levelId)?.stickers.map((sticker, index) => {
+    loadLevelProgress(levelId)?.stickers.flatMap((sticker, index) => {
+      if (!validStickerIds.has(sticker.id)) {
+        return [];
+      }
+
       const legacySticker = sticker as SavedSticker & { isLocked?: boolean };
       const isCorrect = sticker.isCorrect ?? legacySticker.isLocked ?? false;
 
-      return {
-        id: sticker.id,
-        x: sticker.x,
-        y: sticker.y,
-        scale: sticker.scale ?? 1,
-        rotation: sticker.rotation ?? 0,
-        isCorrect,
-        zIndex: sticker.zIndex ?? index + 1,
-        isLocked: legacySticker.isLocked ?? isCorrect,
-      };
+      return [
+        {
+          id: sticker.id,
+          x: Number.isFinite(sticker.x) ? sticker.x : 0,
+          y: Number.isFinite(sticker.y) ? sticker.y : 0,
+          scale: Number.isFinite(sticker.scale) ? sticker.scale : 1,
+          rotation: Number.isFinite(sticker.rotation) ? sticker.rotation : 0,
+          isCorrect,
+          zIndex: Number.isFinite(sticker.zIndex) ? sticker.zIndex : index + 1,
+          isLocked: legacySticker.isLocked ?? isCorrect,
+        },
+      ];
     }) ?? []
   );
 }
@@ -57,7 +65,7 @@ function getSavedStickers(levelId: string) {
 export default function CreativeStudioGame({ levelId }: CreativeStudioGameProps) {
   const level = levels[levelId];
   const [placedStickers, setPlacedStickers] = useState<PlacedSticker[]>(
-    () => getSavedStickers(level.id),
+    () => getSavedStickers(level.id, level.stickers),
   );
   const [hasDismissedCompletion, setHasDismissedCompletion] = useState(false);
   const [selectedStickerId, setSelectedStickerId] = useState<string | null>(null);
