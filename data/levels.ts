@@ -14,6 +14,8 @@ export type LevelSticker = {
   start: {
     x: number;
     y: number;
+    rotation?: number;
+    scale?: number;
   };
   size: {
     width: number;
@@ -80,18 +82,46 @@ export const levels: Record<LevelId, Level> = {
         size: { width: 270, height: 233 },
       },
       {
+        id: "cork-board",
+        name: "Cork Board",
+        imageSrc: "/assets/levels/creative-studio/play-stickers/cork-board.png",
+        target: {
+          x: 920,
+          y: 244,
+          tolerance: 20,
+          targetScale: 1,
+          targetRotation: 0,
+        },
+        start: { x: 90, y: 660 },
+        size: { width: 230, height: 377 },
+      },
+      {
         id: "pottery-wheel",
         name: "Pottery Wheel",
         imageSrc: "/assets/levels/creative-studio/play-stickers/pottery-wheel.png",
         target: {
-          x: 917,
-          y: 667,
+          x: 898,
+          y: 648,
           tolerance: 20,
           targetScale: 1,
           targetRotation: 0,
         },
         start: { x: 765, y: 260 },
         size: { width: 275, height: 302 },
+      },
+      {
+        id: "easel-landscape",
+        name: "Landscape Easel",
+        imageSrc: "/assets/levels/creative-studio/play-stickers/easel-landscape.png",
+        target: {
+          x: 643,
+          y: 395,
+          tolerance: 20,
+          targetScale: 1,
+          targetRotation: 0,
+        },
+        start: { x: 910, y: 250 },
+        size: { width: 210, height: 353 },
       },
       {
         id: "rolled-rug",
@@ -104,7 +134,7 @@ export const levels: Record<LevelId, Level> = {
           targetScale: 1,
           targetRotation: 0,
         },
-        start: { x: 270, y: 820 },
+        start: { x: 270, y: 820, rotation: -5 },
         size: { width: 330, height: 256 },
       },
       {
@@ -120,6 +150,48 @@ export const levels: Record<LevelId, Level> = {
         },
         start: { x: 970, y: 300 },
         size: { width: 135, height: 242 },
+      },
+      {
+        id: "plant-photo-frame",
+        name: "Plant Frame",
+        imageSrc: "/assets/levels/creative-studio/play-stickers/plant-photo-frame.png",
+        target: {
+          x: 844,
+          y: 244,
+          tolerance: 15,
+          targetScale: 1,
+          targetRotation: 0,
+        },
+        start: { x: 1030, y: 120 },
+        size: { width: 130, height: 252 },
+      },
+      {
+        id: "windowsill-photo-frame",
+        name: "Windowsill Frame",
+        imageSrc: "/assets/levels/creative-studio/play-stickers/windowsill-photo-frame.png",
+        target: {
+          x: 159,
+          y: 527,
+          tolerance: 20,
+          targetScale: 1,
+          targetRotation: 0,
+        },
+        start: { x: 1060, y: 390, rotation: -15 },
+        size: { width: 150, height: 194 },
+      },
+      {
+        id: "windowsill-plant",
+        name: "Windowsill Plant",
+        imageSrc: "/assets/levels/creative-studio/play-stickers/windowsill-plant.png",
+        target: {
+          x: 283,
+          y: 445,
+          tolerance: 20,
+          targetScale: 1,
+          targetRotation: 0,
+        },
+        start: { x: 1040, y: 610 },
+        size: { width: 160, height: 214 },
       },
       {
         id: "cat-with-glasses",
@@ -150,6 +222,20 @@ export const levels: Record<LevelId, Level> = {
         size: { width: 325, height: 360 },
       },
       {
+        id: "fabric-stack",
+        name: "Fabric Stack",
+        imageSrc: "/assets/levels/creative-studio/play-stickers/fabric-stack.png",
+        target: {
+          x: 351,
+          y: 753,
+          tolerance: 20,
+          targetScale: 1,
+          targetRotation: 0,
+        },
+        start: { x: 850, y: 700 },
+        size: { width: 210, height: 231 },
+      },
+      {
         id: "yarn-basket",
         name: "Yarn Basket",
         imageSrc: "/assets/levels/creative-studio/play-stickers/yarn-basket.png",
@@ -168,8 +254,8 @@ export const levels: Record<LevelId, Level> = {
         name: "Paper Stack",
         imageSrc: "/assets/levels/creative-studio/play-stickers/paper-stack.png",
         target: {
-          x: 685,
-          y: 758,
+          x: 687,
+          y: 765,
           tolerance: 20,
           targetScale: 1,
           targetRotation: 0,
@@ -188,7 +274,7 @@ export const levels: Record<LevelId, Level> = {
           targetScale: 1,
           targetRotation: 0,
         },
-        start: { x: 980, y: 570 },
+        start: { x: 980, y: 570, rotation: 5 },
         size: { width: 225, height: 230 },
       },
     ],

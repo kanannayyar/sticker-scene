@@ -65,16 +65,14 @@ function useStageSize() {
 
 function StickerNode({
   sticker,
-  isSelected,
   onStickerDrop,
   onSelectSticker,
-  onToggleStickerLock,
+  onStickerDragMove,
 }: {
   sticker: CanvasSticker;
-  isSelected: boolean;
   onStickerDrop: (id: string, x: number, y: number) => void;
   onSelectSticker: (id: string) => void;
-  onToggleStickerLock: (id: string) => void;
+  onStickerDragMove: (id: string, x: number, y: number) => void;
 }) {
   const image = useCanvasImage(sticker.imageSrc);
   const width = sticker.size.width * sticker.scale;
@@ -90,10 +88,12 @@ function StickerNode({
     );
   }
 
-  function handleToggleLock(event: KonvaEventObject<MouseEvent | TouchEvent>) {
-    event.cancelBubble = true;
-    onSelectSticker(sticker.id);
-    onToggleStickerLock(sticker.id);
+  function handleDragMove(event: KonvaEventObject<DragEvent>) {
+    onStickerDragMove(
+      sticker.id,
+      event.target.x() - width / 2,
+      event.target.y() - height / 2,
+    );
   }
 
   if (!image) {
@@ -109,9 +109,49 @@ function StickerNode({
       onClick={() => onSelectSticker(sticker.id)}
       onTap={() => onSelectSticker(sticker.id)}
       onDragStart={() => onSelectSticker(sticker.id)}
+      onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
     >
-      {isSelected && !sticker.isLocked && (
+      <KonvaImage
+        image={image}
+        x={-width / 2}
+        y={-height / 2}
+        width={width}
+        height={height}
+        opacity={sticker.isLocked ? 1 : 0.96}
+      />
+    </Group>
+  );
+}
+
+function SelectedStickerControls({
+  sticker,
+  onSelectSticker,
+  onToggleStickerLock,
+}: {
+  sticker: CanvasSticker;
+  onSelectSticker: (id: string) => void;
+  onToggleStickerLock: (id: string) => void;
+}) {
+  const width = sticker.size.width * sticker.scale;
+  const height = sticker.size.height * sticker.scale;
+  const centerX = sticker.x + width / 2;
+  const centerY = sticker.y + height / 2;
+
+  function handleToggleLock(event: KonvaEventObject<MouseEvent | TouchEvent>) {
+    event.cancelBubble = true;
+    onSelectSticker(sticker.id);
+    onToggleStickerLock(sticker.id);
+  }
+
+  return (
+    <Group
+      x={centerX}
+      y={centerY}
+      rotation={sticker.rotation}
+      listening
+    >
+      {!sticker.isLocked && (
         <Rect
           x={-width / 2 - 10}
           y={-height / 2 - 10}
@@ -122,44 +162,37 @@ function StickerNode({
           strokeWidth={3}
           dash={[12, 8]}
           opacity={0.9}
+          listening={false}
         />
       )}
-      <KonvaImage
-        image={image}
-        x={-width / 2}
-        y={-height / 2}
-        width={width}
-        height={height}
-        opacity={sticker.isLocked ? 1 : 0.96}
-      />
-      {isSelected && (
-        <Group
-          x={Math.max(-width / 2, width / 2 - 110)}
-          y={-height / 2 - 50}
-          onClick={handleToggleLock}
-          onTap={handleToggleLock}
-        >
-          <Rect
-            width={104}
-            height={38}
-            cornerRadius={19}
-            fill={sticker.isLocked ? "#6f8f73" : "#fff8ec"}
-            stroke={sticker.isLocked ? "#5f7d63" : "#d98261"}
-            strokeWidth={3}
-          />
-          <Text
-            width={104}
-            height={38}
-            align="center"
-            verticalAlign="middle"
-            text={sticker.isLocked ? "Unlock" : "Lock"}
-            fill={sticker.isLocked ? "#ffffff" : "#6b432e"}
-            fontSize={15}
-            fontStyle="bold"
-            listening={false}
-          />
-        </Group>
-      )}
+      <Group
+        x={Math.max(-width / 2, width / 2 - 110)}
+        y={-height / 2 - 50}
+        onClick={handleToggleLock}
+        onTap={handleToggleLock}
+        listening
+      >
+        <Rect
+          width={104}
+          height={38}
+          cornerRadius={19}
+          fill={sticker.isLocked ? "#6f8f73" : "#fff8ec"}
+          stroke={sticker.isLocked ? "#5f7d63" : "#d98261"}
+          strokeWidth={3}
+          listening
+        />
+        <Text
+          width={104}
+          height={38}
+          align="center"
+          verticalAlign="middle"
+          text={sticker.isLocked ? "Unlock" : "Lock"}
+          fill={sticker.isLocked ? "#ffffff" : "#6b432e"}
+          fontSize={15}
+          fontStyle="bold"
+          listening={false}
+        />
+      </Group>
     </Group>
   );
 }
@@ -175,6 +208,11 @@ export default function GameCanvas({
 }: GameCanvasProps) {
   const backgroundImage = useCanvasImage(level.rooms.emptyImage);
   const { containerRef, stageSize } = useStageSize();
+  const [dragPreview, setDragPreview] = useState<{
+    id: string;
+    x: number;
+    y: number;
+  } | null>(null);
   const scale = stageSize / level.roomSize.width;
   const placedStickerIds = new Set(placedStickers.map((sticker) => sticker.id));
   const canvasStickers = level.stickers
@@ -192,6 +230,20 @@ export default function GameCanvas({
     .sort((firstSticker, secondSticker) => {
       return (firstSticker.zIndex ?? 0) - (secondSticker.zIndex ?? 0);
     });
+  const selectedSticker = canvasStickers.find((sticker) => sticker.id === selectedStickerId);
+  const selectedStickerWithPreview =
+    selectedSticker && dragPreview?.id === selectedSticker.id
+      ? { ...selectedSticker, x: dragPreview.x, y: dragPreview.y }
+      : selectedSticker;
+
+  function handleStickerDrop(id: string, x: number, y: number) {
+    setDragPreview(null);
+    onStickerDrop(id, x, y);
+  }
+
+  function handleStickerDragMove(id: string, x: number, y: number) {
+    setDragPreview({ id, x, y });
+  }
 
   return (
     <div
@@ -232,16 +284,26 @@ export default function GameCanvas({
               height={level.roomSize.height}
             />
           )}
+        </Layer>
+        <Layer>
           {canvasStickers.map((sticker) => (
             <StickerNode
               key={sticker.id}
               sticker={sticker}
-              isSelected={sticker.id === selectedStickerId}
-              onStickerDrop={onStickerDrop}
+              onStickerDrop={handleStickerDrop}
+              onSelectSticker={onSelectSticker}
+              onStickerDragMove={handleStickerDragMove}
+            />
+          ))}
+        </Layer>
+        <Layer listening>
+          {selectedStickerWithPreview && (
+            <SelectedStickerControls
+              sticker={selectedStickerWithPreview}
               onSelectSticker={onSelectSticker}
               onToggleStickerLock={onToggleStickerLock}
             />
-          ))}
+          )}
         </Layer>
       </Stage>
     </div>

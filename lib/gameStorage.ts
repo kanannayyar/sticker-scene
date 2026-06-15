@@ -6,6 +6,7 @@ export type SavedSticker = {
   rotation?: number;
   zIndex?: number;
   isCorrect?: boolean;
+  isLocked?: boolean;
 };
 
 export type PlacedSticker = SavedSticker & {

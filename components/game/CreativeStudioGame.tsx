@@ -34,28 +34,68 @@ function clampRotation(rotation: number) {
   return Math.min(Math.max(rotation, -45), 45);
 }
 
+function isStickerAtTarget(
+  placedSticker: Pick<PlacedSticker, "x" | "y">,
+  levelSticker: LevelSticker,
+) {
+  return (
+    getDistance(
+      placedSticker.x,
+      placedSticker.y,
+      levelSticker.target.x,
+      levelSticker.target.y,
+    ) <= levelSticker.target.tolerance
+  );
+}
+
+function snapStickerToTarget(
+  placedSticker: PlacedSticker,
+  levelSticker: LevelSticker,
+): PlacedSticker {
+  return {
+    ...placedSticker,
+    x: levelSticker.target.x,
+    y: levelSticker.target.y,
+    isCorrect: true,
+    isLocked: true,
+  };
+}
+
 function getSavedStickers(levelId: string, levelStickers: LevelSticker[]) {
-  const validStickerIds = new Set(levelStickers.map((sticker) => sticker.id));
+  const levelStickerById = new Map(
+    levelStickers.map((sticker) => [sticker.id, sticker]),
+  );
 
   return (
     loadLevelProgress(levelId)?.stickers.flatMap((sticker, index) => {
-      if (!validStickerIds.has(sticker.id)) {
+      const levelSticker = levelStickerById.get(sticker.id);
+
+      if (!levelSticker) {
         return [];
       }
 
-      const legacySticker = sticker as SavedSticker & { isLocked?: boolean };
-      const isCorrect = sticker.isCorrect ?? legacySticker.isLocked ?? false;
+      const savedSticker: PlacedSticker = {
+        id: sticker.id,
+        x: Number.isFinite(sticker.x) ? sticker.x : 0,
+        y: Number.isFinite(sticker.y) ? sticker.y : 0,
+        scale: Number.isFinite(sticker.scale) ? sticker.scale : 1,
+        rotation: Number.isFinite(sticker.rotation) ? sticker.rotation : 0,
+        isCorrect: false,
+        zIndex: Number.isFinite(sticker.zIndex) ? sticker.zIndex : index + 1,
+        isLocked: sticker.isLocked ?? false,
+      };
+      const savedCorrectCandidate =
+        typeof sticker.isCorrect === "boolean"
+          ? sticker.isCorrect
+          : Boolean(sticker.isLocked);
+      const isCorrect =
+        savedCorrectCandidate && isStickerAtTarget(savedSticker, levelSticker);
 
       return [
         {
-          id: sticker.id,
-          x: Number.isFinite(sticker.x) ? sticker.x : 0,
-          y: Number.isFinite(sticker.y) ? sticker.y : 0,
-          scale: Number.isFinite(sticker.scale) ? sticker.scale : 1,
-          rotation: Number.isFinite(sticker.rotation) ? sticker.rotation : 0,
+          ...savedSticker,
           isCorrect,
-          zIndex: Number.isFinite(sticker.zIndex) ? sticker.zIndex : index + 1,
-          isLocked: legacySticker.isLocked ?? isCorrect,
+          isLocked: isCorrect || savedSticker.isLocked,
         },
       ];
     }) ?? []
@@ -98,6 +138,7 @@ export default function CreativeStudioGame({ levelId }: CreativeStudioGameProps)
       rotation: sticker.rotation,
       zIndex: sticker.zIndex,
       isCorrect: sticker.isCorrect,
+      isLocked: sticker.isLocked,
     }));
 
     saveLevelProgress(level.id, {
@@ -122,8 +163,8 @@ export default function CreativeStudioGame({ levelId }: CreativeStudioGameProps)
           id: sticker.id,
           x: sticker.start.x,
           y: sticker.start.y,
-          scale: 1,
-          rotation: 0,
+          scale: sticker.start.scale ?? 1,
+          rotation: sticker.start.rotation ?? 0,
           zIndex: nextZIndex,
           isCorrect: false,
           isLocked: false,
@@ -141,9 +182,8 @@ export default function CreativeStudioGame({ levelId }: CreativeStudioGameProps)
       return;
     }
 
-    const isCloseEnough =
-      getDistance(x, y, sticker.target.x, sticker.target.y) <=
-      sticker.target.tolerance;
+    const droppedSticker = { x, y };
+    const isCloseEnough = isStickerAtTarget(droppedSticker, sticker);
 
     if (isCloseEnough) {
       setHasDismissedCompletion(false);
@@ -155,31 +195,58 @@ export default function CreativeStudioGame({ levelId }: CreativeStudioGameProps)
           return item;
         }
 
+        if (isCloseEnough) {
+          return snapStickerToTarget(item, sticker);
+        }
+
         return {
           ...item,
-          x: isCloseEnough ? sticker.target.x : x,
-          y: isCloseEnough ? sticker.target.y : y,
-          isCorrect: isCloseEnough,
-          isLocked: isCloseEnough,
+          x,
+          y,
+          isCorrect: false,
+          isLocked: false,
         };
       }),
     );
   }
 
   function handleToggleStickerLock(id: string) {
+    const levelSticker = level.stickers.find((sticker) => sticker.id === id);
+    const currentSticker = placedStickers.find((sticker) => sticker.id === id);
+    const shouldComplete =
+      levelSticker && currentSticker && !currentSticker.isLocked
+        ? isStickerAtTarget(currentSticker, levelSticker)
+        : false;
+
+    if (shouldComplete) {
+      setHasDismissedCompletion(false);
+    }
+
     setPlacedStickers((currentStickers) =>
       currentStickers.map((item) => {
         if (item.id !== id) {
           return item;
         }
 
-        const willUnlock = item.isLocked;
+        if (item.isLocked) {
+          return {
+            ...item,
+            isCorrect: false,
+            isLocked: false,
+          };
+        }
 
-        return {
-          ...item,
-          isCorrect: willUnlock ? false : item.isCorrect ?? false,
-          isLocked: !item.isLocked,
-        };
+        if (!levelSticker || !isStickerAtTarget(item, levelSticker)) {
+          console.info("Sticker locked without completing. Move closer to the correct position first.");
+
+          return {
+            ...item,
+            isCorrect: false,
+            isLocked: true,
+          };
+        }
+
+        return snapStickerToTarget(item, levelSticker);
       }),
     );
   }
