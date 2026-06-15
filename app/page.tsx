@@ -19,16 +19,16 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
-                href="/game/creative-studio"
+                href="/levels"
                 className="inline-flex h-12 items-center justify-center rounded-full bg-[#d98261] px-7 text-base font-black text-white shadow-lg shadow-[#d98261]/25 transition hover:-translate-y-0.5 hover:bg-[#c87355]"
               >
-                Play Creative Studio
+                Start Playing
               </Link>
             </div>
           </div>
 
           <Link
-            href="/game/creative-studio"
+            href="/levels"
             className="group block rounded-[2rem] border border-[#edc6aa] bg-[#fff8ec] p-4 shadow-2xl shadow-[#8a6047]/15 transition hover:-translate-y-1"
           >
             <div className="overflow-hidden rounded-[1.5rem] border border-[#f2d7bf] bg-white">
@@ -44,14 +44,14 @@ export default function Home() {
             <div className="flex flex-col gap-3 px-2 pb-2 pt-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-2xl font-black text-[#6b432e]">
-                  Creative Studio
+                  Choose a Room
                 </h2>
                 <p className="mt-1 text-sm font-semibold text-[#9a6a4e]">
-                  5 stickers ready to place
+                  Creative Studio is ready, Cozy Cafe is coming soon
                 </p>
               </div>
               <span className="rounded-full bg-[#6f8f73] px-5 py-3 text-sm font-black text-white">
-                Start Level
+                View Levels
               </span>
             </div>
           </Link>

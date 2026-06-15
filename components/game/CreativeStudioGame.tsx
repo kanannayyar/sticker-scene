@@ -68,6 +68,10 @@ function getSavedStickers(levelId: string, levelStickers: LevelSticker[]) {
 
   return (
     loadLevelProgress(levelId)?.stickers.flatMap((sticker, index) => {
+      if (!sticker || typeof sticker.id !== "string") {
+        return [];
+      }
+
       const levelSticker = levelStickerById.get(sticker.id);
 
       if (!levelSticker) {
